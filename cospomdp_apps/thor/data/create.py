@@ -1,11 +1,11 @@
 # Copyright 2022 Kaiyu Zheng
-# 
+#
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
-# 
+#
 #     http://www.apache.org/licenses/LICENSE-2.0
-# 
+#
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -17,14 +17,20 @@ import os
 import yaml
 import random
 from tqdm import tqdm
-from thortils import (launch_controller,
-                      thor_reachable_positions,
-                      thor_agent_pose,
-                      thor_teleport,
-                      thor_object_type,
-                      ithor_scene_names)
+from thortils import (
+    launch_controller,
+    thor_reachable_positions,
+    thor_agent_pose,
+    thor_teleport,
+    thor_object_type,
+    ithor_scene_names,
+)
+from thortils.object import (
+    thor_object_in_fov,
+)
 from .. import constants
 from thortils.vision.general import xyxy_to_normalized_xywh, saveimg, make_colors
+
 
 def yolo_create_dataset_yaml(datadir, classes, name="yolov5"):
     """
@@ -41,35 +47,48 @@ def yolo_create_dataset_yaml(datadir, classes, name="yolov5"):
     """
     content = dict(
         path=datadir,
-        train="train",    # training images relative to 'path'
-        val="val",        # validation images relative to path
+        train="train",  # training images relative to 'path'
+        val="val",  # validation images relative to path
         nc=len(classes),  # number of classes
         names=classes,
-        colors=make_colors(len(classes), seed=1)
+        colors=make_colors(len(classes), seed=1),
     )
     os.makedirs(datadir, exist_ok=True)
     with open(os.path.join(datadir, "{}-dataset.yaml".format(name)), "w") as f:
         yaml.dump(content, f)
 
-def yolo_generate_dataset(datadir, scenes, objclasses, for_train,
-                          num_samples=100,
-                          v_angles=constants.V_ANGLES,
-                          h_angles=constants.H_ANGLES):
+
+def yolo_generate_dataset(
+    datadir,
+    scenes,
+    objclasses,
+    for_train,
+    num_samples=100,
+    v_angles=constants.V_ANGLES,
+    h_angles=constants.H_ANGLES,
+):
     for scene in scenes:
         print("Generating YOLO data for", scene)
         yolo_generate_dataset_for_scene(
-            datadir, scene, objclasses, for_train,
+            datadir,
+            scene,
+            objclasses,
+            for_train,
             num_samples=num_samples,
             v_angles=v_angles,
-            h_angles=h_angles)
+            h_angles=h_angles,
+        )
 
-def yolo_generate_dataset_for_scene(datadir,
-                                    scene,
-                                    objclasses,
-                                    for_train,
-                                    num_samples=100,
-                                    v_angles=constants.V_ANGLES,
-                                    h_angles=constants.H_ANGLES):
+
+def yolo_generate_dataset_for_scene(
+    datadir,
+    scene,
+    objclasses,
+    for_train,
+    num_samples=100,
+    v_angles=constants.V_ANGLES,
+    h_angles=constants.H_ANGLES,
+):
     """Places the agent at random position within the scene.
     Then, make the agent look around, for all possible
     horizontal and vertical angles. Then grab the frame and object
@@ -98,15 +117,17 @@ def yolo_generate_dataset_for_scene(datadir,
         h_angles (list): List of acceptable yaw angles
 
     """
-    objclasses = {objclasses[i]: i for i in range(len(objclasses))}  # convert the list to dict
+    objclasses = {
+        objclasses[i]: i for i in range(len(objclasses))
+    }  # convert the list to dict
     thor_config = {**constants.CONFIG, **{"scene": scene}}
     controller = launch_controller(thor_config)
     reachable_positions = thor_reachable_positions(controller)
     agent_pose = thor_agent_pose(controller.last_event)
     examples = []  # list of (img, annotations)
-    y = agent_pose[0]['y']
-    roll = agent_pose[1]['z']
-    _body_pitch = agent_pose[1]['x']
+    y = agent_pose[0]["y"]
+    roll = agent_pose[1]["z"]
+    _body_pitch = agent_pose[1]["x"]
     _count = 0
     _chosen = set()
     _pbar = tqdm(total=num_samples)
@@ -114,22 +135,28 @@ def yolo_generate_dataset_for_scene(datadir,
         x, z = random.sample(reachable_positions, 1)[0]
         if (x, z) in _chosen:
             continue
-        _chosen.add((x,z))
+        _chosen.add((x, z))
         for pitch in v_angles:
             for yaw in h_angles:
-                event = thor_teleport(controller,
-                                      position=dict(x=x, y=y, z=z),
-                                      rotation=dict(x=_body_pitch, y=yaw, z=roll),
-                                      horizon=pitch)  # camera pitch
+                event = thor_teleport(
+                    controller,
+                    position=dict(x=x, y=y, z=z),
+                    rotation=dict(x=_body_pitch, y=yaw, z=roll),
+                    horizon=pitch,
+                )  # camera pitch
                 img = event.frame
                 annotations = []
                 for objid in event.instance_detections2D:
                     object_class = thor_object_type(objid)
+                    if not thor_object_in_fov(event, objid):
+                        continue
+
                     if object_class in objclasses:
                         class_int = objclasses[object_class]
                         bbox2D = event.instance_detections2D[objid]
-                        x_center, y_center, w, h =\
-                            xyxy_to_normalized_xywh(bbox2D, img.shape[:2], center=True)
+                        x_center, y_center, w, h = xyxy_to_normalized_xywh(
+                            bbox2D, img.shape[:2], center=True
+                        )
                         annotations.append([class_int, x_center, y_center, w, h])
                 if len(annotations) > 0:
                     examples.append((img, annotations))
@@ -153,7 +180,7 @@ def yolo_generate_dataset_for_scene(datadir,
 
 
 if __name__ == "__main__":
-    instructions ="""
+    instructions = """
     python -m cosp.vision.data.create path/to/output/dataset. -n yolov5
     The -n flag supplies name which will be used in {name}-dataset.yaml
     Let's do kitchen first.
@@ -161,23 +188,44 @@ if __name__ == "__main__":
     The path/to/output/dataset can be relative or absolute.
     """
     import argparse
+
     parser = argparse.ArgumentParser(
-        description="Create object detector dataset\n\n" + instructions)
-    parser.add_argument("outdir", type=str, help="Path to output directory."
-                        "This is the root of the dataset. Will internally use"
-                        "the absolute path.")
-    parser.add_argument("--model", "-m", type=str, help="Model. Default yolo",
-                        default="yolo")
-    parser.add_argument("--name", "-n", type=str, help="Name of the dataset."
-                        "Default: same name as the model")
-    parser.add_argument("--scene-types", type=str, nargs="+", help="Scene types.",
-                        default=["kitchen"])
-    parser.add_argument("--object-classes", type=str, nargs="+", help="Object classes.",
-                        default=[])
-    parser.add_argument("--num-train-samples", type=int, help="Number of training."
-                        "samples per scene", default=120)
-    parser.add_argument("--num-val-samples", type=int, help="Number of validation."
-                        "samples per scene", default=40)
+        description="Create object detector dataset\n\n" + instructions
+    )
+    parser.add_argument(
+        "outdir",
+        type=str,
+        help="Path to output directory."
+        "This is the root of the dataset. Will internally use"
+        "the absolute path.",
+    )
+    parser.add_argument(
+        "--model", "-m", type=str, help="Model. Default yolo", default="yolo"
+    )
+    parser.add_argument(
+        "--name",
+        "-n",
+        type=str,
+        help="Name of the dataset." "Default: same name as the model",
+    )
+    parser.add_argument(
+        "--scene-types", type=str, nargs="+", help="Scene types.", default=["kitchen"]
+    )
+    parser.add_argument(
+        "--object-classes", type=str, nargs="+", help="Object classes.", default=[]
+    )
+    parser.add_argument(
+        "--num-train-samples",
+        type=int,
+        help="Number of training." "samples per scene",
+        default=120,
+    )
+    parser.add_argument(
+        "--num-val-samples",
+        type=int,
+        help="Number of validation." "samples per scene",
+        default=40,
+    )
     args = parser.parse_args()
     if args.name is None:
         args.name = args.model
@@ -221,10 +269,20 @@ if __name__ == "__main__":
     print("Building training dataset")
     abs_outdir = os.path.abspath(args.outdir)
     yolo_create_dataset_yaml(abs_outdir, object_classes)
-    yolo_generate_dataset(abs_outdir, scenes["train"], object_classes, True,
-                          num_samples=args.num_train_samples)
+    yolo_generate_dataset(
+        abs_outdir,
+        scenes["train"],
+        object_classes,
+        True,
+        num_samples=args.num_train_samples,
+    )
     print("--------------------------------------------------------")
     print("Building val dataset")
     yolo_create_dataset_yaml(abs_outdir, object_classes)
-    yolo_generate_dataset(abs_outdir, scenes["val"], object_classes, False,
-                          num_samples=args.num_val_samples)
+    yolo_generate_dataset(
+        abs_outdir,
+        scenes["val"],
+        object_classes,
+        False,
+        num_samples=args.num_val_samples,
+    )
