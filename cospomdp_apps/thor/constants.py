@@ -1,11 +1,11 @@
 # Copyright 2022 Kaiyu Zheng
-# 
+#
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
-# 
+#
 #     http://www.apache.org/licenses/LICENSE-2.0
-# 
+#
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -16,26 +16,26 @@
 # Copy of thortils.constants
 ##########################################
 
-#-------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------
 # Overall Ai2Thor parameters (v2.7.2)
 GRID_SIZE = 0.25
 MOVE_STEP_SIZE = GRID_SIZE
 
-H_ROTATION = 45   # Yaw; body rotation. Only 90 won't stuck
-V_ROTATION = 30   # Pitch; camera up and down
+H_ROTATION = 45  # Yaw; body rotation. Only 90 won't stuck
+V_ROTATION = 30  # Pitch; camera up and down
 
-H_ANGLES = [i*H_ROTATION for i in range(int(360/H_ROTATION))]
+H_ANGLES = [i * H_ROTATION for i in range(int(360 / H_ROTATION))]
 # Reference v3.3.4
 # https://ai2thor.allenai.org/ithor/documentation/navigation/#Teleport-horizon
 # Negative camera horizon values correspond to the agent looking up, whereas
 # positive horizon values correspond to the agent looking down.
 V_ANGLES = [-30, 0, 30, 60]
 
-FOV = 90   # from official doc: The default field of view when agentMode="default" is 90 degrees.
+FOV = 90  # from official doc: The default field of view when agentMode="default" is 90 degrees.
 
 VISIBILITY_DISTANCE = 1.5
-INTERACTION_DISTANCE = 1.5   # objects farther away than this cannot be interacted with.
-AGENT_MODE = "default"   # from official doc: For iTHOR, it is often safest to stick with the default agent.
+INTERACTION_DISTANCE = 1.5  # objects farther away than this cannot be interacted with.
+AGENT_MODE = "default"  # from official doc: For iTHOR, it is often safest to stick with the default agent.
 
 IMAGE_WIDTH = 600
 IMAGE_HEIGHT = 600
@@ -47,12 +47,12 @@ RENDER_INSTANCE_SEGMENTATION = True
 CONTINUOUS = True
 SNAP_TO_GRID = True
 
-#------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 # Ai2thor parameters related to object search
 GOAL_DISTANCE = 1.0
 MAX_STEPS = 100
 
-#------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 # Ai2Thor spawning
 
 # When enabled, the scene will attempt to randomize all moveable objects outside
@@ -84,12 +84,13 @@ NUM_DUPLICATES_OF_TYPE = []  # not actually used
 # Actionable Properties section of the Objects documentation for a full list of
 # Receptacle objects.  **Note**: Receptacle objects allow other objects to be
 # placed on or in them if the other object can physically fit the receptacle.
-EXCLUDED_RECEPTACLES=[]   # not actually used
+EXCLUDED_RECEPTACLES = []  # not actually used
 
 
-#-------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------
 # What scenes are we using
 from thortils.scene import ithor_scene_names
+
 LEVELS = {
     "kitchen": [i for i in range(1, 31)],
     "living_room": [i for i in range(1, 31)],
@@ -97,57 +98,58 @@ LEVELS = {
     "bathroom": [i for i in range(1, 31)],
 }
 SCENE_TYPES = list(LEVELS.keys())
-KITCHEN_TRAIN_SCENES = ithor_scene_names("kitchen", range(1,21))
-KITCHEN_VAL_SCENES   = ithor_scene_names("kitchen", range(21,31))
-LIVING_ROOM_TRAIN_SCENES = ithor_scene_names("living_room", range(1,21))
-LIVING_ROOM_VAL_SCENES   = ithor_scene_names("living_room", range(21,31))
-BEDROOM_TRAIN_SCENES = ithor_scene_names("bedroom", range(1,21))
-BEDROOM_VAL_SCENES   = ithor_scene_names("bedroom", range(21,31))
-BATHROOM_TRAIN_SCENES = ithor_scene_names("bathroom", range(1,21))
-BATHROOM_VAL_SCENES   = ithor_scene_names("bathroom", range(21,31))
+KITCHEN_TRAIN_SCENES = ithor_scene_names("kitchen", range(1, 21))
+KITCHEN_VAL_SCENES = ithor_scene_names("kitchen", range(21, 31))
+LIVING_ROOM_TRAIN_SCENES = ithor_scene_names("living_room", range(1, 21))
+LIVING_ROOM_VAL_SCENES = ithor_scene_names("living_room", range(21, 31))
+BEDROOM_TRAIN_SCENES = ithor_scene_names("bedroom", range(1, 21))
+BEDROOM_VAL_SCENES = ithor_scene_names("bedroom", range(21, 31))
+BATHROOM_TRAIN_SCENES = ithor_scene_names("bathroom", range(1, 21))
+BATHROOM_VAL_SCENES = ithor_scene_names("bathroom", range(21, 31))
 
 
-#-------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------
 # Defines what objects the agent is able to interact with, and the corresponding
 # actions to interact with those objects.
 def func_pickupable(obj):
     return ["PickupObject"] if not obj["isPickedUp"] else ["DropObject"]
+
+
 def func_openable(obj):
     return ["OpenObject"] if not obj["isOpen"] else ["CloseObject"]
 
-INTERACTION_PROPERTIES = [
 
+INTERACTION_PROPERTIES = [
     # can interact with pickupable objects
     ("pickupable", func_pickupable),
-
     # can interact with openable objects
-    ("openable", func_openable)
-
+    ("openable", func_openable),
 ]
 
 # Interactions allowed; Note that you need to change thor_interact.js too.
-INTERACTIONS = ["PickupObject",
-                "DropObject",
-                "OpenObject",
-                "CloseObject"]
+INTERACTIONS = ["PickupObject", "DropObject", "OpenObject", "CloseObject"]
+
 
 # Defines navigation actions, with parameters
 def get_movement_params(step_size, v_rot, h_rot):
-    return {"MoveAhead"  :  {"moveMagnitude": step_size},
-            "LookUp"     :  {"degrees": v_rot},
-            "LookDown"   :  {"degrees": v_rot},
-            "RotateLeft" :  {"degrees": h_rot},
-            "RotateRight":  {"degrees": h_rot}}
-MOVEMENT_PARAMS = get_movement_params(MOVE_STEP_SIZE,
-                                      V_ROTATION,
-                                      H_ROTATION)
+    return {
+        "MoveAhead": {"moveMagnitude": step_size},
+        "LookUp": {"degrees": v_rot},
+        "LookDown": {"degrees": v_rot},
+        "RotateLeft": {"degrees": h_rot},
+        "RotateRight": {"degrees": h_rot},
+    }
+
+
+MOVEMENT_PARAMS = get_movement_params(MOVE_STEP_SIZE, V_ROTATION, H_ROTATION)
 MOVEMENTS = list(MOVEMENT_PARAMS.keys())
+
 
 def get_acceptable_thor_actions():
     return MOVEMENTS + INTERACTIONS
 
 
-#------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 # Object types that can appear on scatter plot
 OBJTYPES_ON_PLOT = {
     "AlarmClock",
@@ -273,7 +275,7 @@ OBJTYPES_ON_PLOT = {
     "Watch",
     "WateringCan",
     "Window",
-    "WineBottle"
+    "WineBottle",
 }
 
 # These objects will be bolded on the scatter plot
@@ -293,18 +295,18 @@ LARGE_RECEPTABLES = {
     "SinkBasin",
     "Sofa",
     "Toilet",
-    "TVStand"
+    "TVStand",
 }
 
-SCATTER_GRANULARITY = GRID_SIZE*2
+SCATTER_GRANULARITY = GRID_SIZE * 2
 
 
-#------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 # Logistics of data collection
 TRAIN_TIME = 90  # 90 seconds to play around in the home
-TEST_TIME = 180   # 180 seconds to search for the object
+TEST_TIME = 180  # 180 seconds to search for the object
 
-#------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 TOS_REWARD_HI = 100
 TOS_REWARD_LO = -100
 TOS_REWARD_STEP = -1
@@ -316,34 +318,116 @@ GOAL_DISTANCE = 1.0
 
 # This is a list of object classes that apper in all kitchen scenes; not sure
 # if they lie in the open or inside containers.
-KITCHEN_OBJECT_CLASSES = ['Microwave', 'Mug', 'Spatula', 'Sink', 'Apple', 'SoapBottle', 'Cup',
-                          'DishSponge', 'StoveBurner', 'Fork', 'SaltShaker', 'ButterKnife', 'CounterTop',
-                          'Fridge', 'Pan', 'StoveKnob', 'Cabinet', 'SinkBasin', 'Knife', 'Floor',
-                          'Lettuce', 'Egg', 'Spoon', 'GarbageCan', 'Faucet', 'CoffeeMachine', 'Potato',
-                          'Bowl', 'Toaster', 'Plate', 'Tomato', 'Pot', 'Bread', 'LightSwitch',
-                          'PepperShaker']
+KITCHEN_OBJECT_CLASSES = [
+    "Microwave",
+    "Mug",
+    "Spatula",
+    "Sink",
+    "Apple",
+    "SoapBottle",
+    "Cup",
+    "DishSponge",
+    "StoveBurner",
+    "Fork",
+    "SaltShaker",
+    "ButterKnife",
+    "CounterTop",
+    "Fridge",
+    "Pan",
+    "StoveKnob",
+    "Cabinet",
+    "SinkBasin",
+    "Knife",
+    # "Floor",
+    "Lettuce",
+    "Egg",
+    "Spoon",
+    "GarbageCan",
+    "Faucet",
+    "CoffeeMachine",
+    "Potato",
+    "Bowl",
+    "Toaster",
+    "Plate",
+    "Tomato",
+    "Pot",
+    "Bread",
+    "LightSwitch",
+    "PepperShaker",
+]
 
-LIVING_ROOM_OBJECT_CLASSES = ['Laptop', 'Sofa', 'FloorLamp', 'Television', 'CreditCard', 'HousePlant',
-                              'Floor', 'KeyChain', 'GarbageCan', 'RemoteControl', 'Pillow', 'Painting',
-                              'Box', 'LightSwitch']
+LIVING_ROOM_OBJECT_CLASSES = [
+    "Laptop",
+    "Sofa",
+    "FloorLamp",
+    "Television",
+    "CreditCard",
+    "HousePlant",
+    # "Floor",
+    "KeyChain",
+    "GarbageCan",
+    "RemoteControl",
+    "Pillow",
+    "Painting",
+    "Box",
+    "LightSwitch",
+]
 
-BEDROOM_OBJECT_CLASSES = ['Laptop', 'Bed', 'CreditCard', 'Book', 'Pen', 'Pencil', 'CD', 'Mirror',
-                          'Floor', 'KeyChain', 'DeskLamp', 'GarbageCan', 'AlarmClock', 'Pillow',
-                          'Window', 'CellPhone', 'LightSwitch']
+BEDROOM_OBJECT_CLASSES = [
+    "Laptop",
+    "Bed",
+    "CreditCard",
+    "Book",
+    "Pen",
+    "Pencil",
+    "CD",
+    "Mirror",
+    # "Floor",
+    "KeyChain",
+    "DeskLamp",
+    "GarbageCan",
+    "AlarmClock",
+    "Pillow",
+    "Window",
+    "CellPhone",
+    "LightSwitch",
+]
 
-BATHROOM_OBJECT_CLASSES = ['Cloth', 'Sink', 'SoapBottle', 'TowelHolder', 'SoapBar',
-                           'HandTowelHolder', 'SprayBottle', 'ToiletPaper', 'SinkBasin', 'Mirror',
-                           'Floor', 'Towel', 'ScrubBrush', 'GarbageCan', 'Faucet', 'Candle',
-                           'HandTowel', 'ToiletPaperHanger', 'Toilet', 'Plunger', 'LightSwitch']
+BATHROOM_OBJECT_CLASSES = [
+    "Cloth",
+    "Sink",
+    "SoapBottle",
+    "TowelHolder",
+    "SoapBar",
+    "HandTowelHolder",
+    "SprayBottle",
+    "ToiletPaper",
+    "SinkBasin",
+    "Mirror",
+    # "Floor",
+    "Towel",
+    "ScrubBrush",
+    "GarbageCan",
+    "Faucet",
+    "Candle",
+    "HandTowel",
+    "ToiletPaperHanger",
+    "Toilet",
+    "Plunger",
+    "LightSwitch",
+]
 
+ALL_OBJECT_CLASSES = (
+    KITCHEN_OBJECT_CLASSES
+    + LIVING_ROOM_OBJECT_CLASSES
+    + BATHROOM_OBJECT_CLASSES
+    + BEDROOM_OBJECT_CLASSES
+)
 
-ALL_OBJECT_CLASSES = KITCHEN_OBJECT_CLASSES +\
-                     LIVING_ROOM_OBJECT_CLASSES +\
-                     BATHROOM_OBJECT_CLASSES +\
-                     BEDROOM_OBJECT_CLASSES
 
 def get_acceptable_thor_actions():
     return MOVEMENTS
+
 
 # Create config defined in this file as a dictionary
 def _load_config():
@@ -357,6 +441,8 @@ def _load_config():
             continue
         config[k] = v
     return config
+
+
 CONFIG = _load_config()
 
 NEARBY_THRES = 2.0
