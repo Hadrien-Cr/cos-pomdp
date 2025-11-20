@@ -33,7 +33,7 @@ V_ANGLES = [-30, 0, 30, 60]
 
 FOV = 90  # from official doc: The default field of view when agentMode="default" is 90 degrees.
 
-VISIBILITY_DISTANCE = 1.5
+VISIBILITY_DISTANCE = 3
 INTERACTION_DISTANCE = 1.5  # objects farther away than this cannot be interacted with.
 AGENT_MODE = "default"  # from official doc: For iTHOR, it is often safest to stick with the default agent.
 
@@ -335,7 +335,7 @@ KITCHEN_OBJECT_CLASSES = [
     "Fridge",
     "Pan",
     "StoveKnob",
-    "Cabinet",
+    # "Cabinet",
     "SinkBasin",
     "Knife",
     # "Floor",
