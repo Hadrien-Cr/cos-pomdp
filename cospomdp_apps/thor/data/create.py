@@ -131,6 +131,7 @@ def yolo_generate_dataset_for_scene(
     _count = 0
     _chosen = set()
     _pbar = tqdm(total=num_samples)
+
     while _count < num_samples:
         x, z = random.sample(reachable_positions, 1)[0]
         if (x, z) in _chosen:
@@ -153,11 +154,21 @@ def yolo_generate_dataset_for_scene(
 
                     if object_class in objclasses:
                         class_int = objclasses[object_class]
-                        bbox2D = event.instance_detections2D[objid]
+                        xmin, ymin, xmax, ymax = event.instance_detections2D[objid]
+
+                        if (
+                            abs(xmin - xmax) * abs(ymin - ymax)
+                            < constants.MIN_AREA_FRACTION
+                            * constants.IMAGE_WIDTH
+                            * constants.IMAGE_HEIGHT
+                        ):
+                            continue
+
                         x_center, y_center, w, h = xyxy_to_normalized_xywh(
-                            bbox2D, img.shape[:2], center=True
+                            (xmin, ymin, xmax, ymax), img.shape[:2], center=True
                         )
                         annotations.append([class_int, x_center, y_center, w, h])
+
                 if len(annotations) > 0:
                     examples.append((img, annotations))
                     _count += 1
