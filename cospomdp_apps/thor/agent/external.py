@@ -1,11 +1,11 @@
 # Copyright 2022 Kaiyu Zheng
-# 
+#
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
-# 
+#
 #     http://www.apache.org/licenses/LICENSE-2.0
-# 
+#
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -14,24 +14,29 @@
 
 import sys
 import os
+
 ABS_PATH = os.path.dirname(os.path.abspath(__file__))
 
-from ..mjolnir.datasets.offline_controller_with_small_rotation import ACTIONS_LIST
+# from ..mjolnir.datasets.offline_controller_with_small_rotation import ACTIONS_LIST
 import torch
 
 from ..common import TOS_Action, ThorAgent
 from cospomdp_apps.basic.action import ALL_MOVES_2D
 
+
 class Args(object):
     pass
 
+
 class MJOLNIR_MODULE(object):
     pass
+
 
 class StateInfo(object):
     # Used to pass in stuff to the NavigationAgent by-passing all the episode
     # business
     pass
+
 
 def MJOLNIR_O_args(gpu_ids=[-1]):
     # Referencing models/mjolnir_o.py and utils/flag_parser.py
@@ -40,7 +45,9 @@ def MJOLNIR_O_args(gpu_ids=[-1]):
     args.action_space = 6
     args.hidden_state_sz = 512
     args.dropout_rate = 0.25
-    args.glove_file = os.path.join(ABS_PATH, "../mjolnir", "data/thor_glove/glove_thorv1_300.hdf5")
+    args.glove_file = os.path.join(
+        ABS_PATH, "../mjolnir", "data/thor_glove/glove_thorv1_300.hdf5"
+    )
     args.gpu_ids = gpu_ids
     args.gpu_id = gpu_ids[0]
 
@@ -50,22 +57,24 @@ def MJOLNIR_O_args(gpu_ids=[-1]):
 
     args.rank = 0  # used to set random seed
 
-    args.partial_reward = True   # using partial reward for parent objects
+    args.partial_reward = True  # using partial reward for parent objects
     args.eval = True
     args.seed = 1
     args.verbose = False
 
     args.learned_loss = False  # Only SAVN sets this to True.
-    args.num_steps = -1        # This is originally set to 50; But we use our own.
+    args.num_steps = -1  # This is originally set to 50; But we use our own.
     args.vis = False
-    args.results_json = None   # we do not need this
+    args.results_json = None  # we do not need this
 
     return args
+
 
 class ThorObjectSearchExternalAgent(ThorAgent):
     """The external agent uses an external model (e.g. MJOLNIR) that
     directly outputs low-level actions (e.g. MoveAhead) given visual
     input (images, bounding boxes)."""
+
     AGENT_USES_CONTROLLER = False
 
     def _import_mjolnir(self):
@@ -76,6 +85,7 @@ class ThorObjectSearchExternalAgent(ThorAgent):
         from ..mjolnir.utils.class_finder import model_class, agent_class
         from ..mjolnir.utils.net_util import toFloatTensor, resnet_input_transform
         from ..mjolnir.models.model_io import ModelInput, ModelOptions
+
         mjolnir = MJOLNIR_MODULE()
         mjolnir.Glove = Glove
         mjolnir.model_class = model_class
@@ -86,13 +96,8 @@ class ThorObjectSearchExternalAgent(ThorAgent):
         mjolnir.ModelOptions = ModelOptions
         return mjolnir
 
-
-    def __init__(self,
-                 task_config,
-                 model_name,
-                 load_model_path,
-                 args,
-                 actions=ACTIONS_LIST + ["Done"]):
+    def __init__(self, task_config, model_name, load_model_path, args, actions):
+        #  actions=ACTIONS_LIST + ["Done"]):
         """
         args (MJOLNIR_O_args): mimics the args parsed from command line
         """
@@ -100,12 +105,13 @@ class ThorObjectSearchExternalAgent(ThorAgent):
         # is important. The yolov5's library is loaded first, so that the detector
         # model can be loaded. After that, everything else uses `models` from mjolnir.
         super().__init__(task_config)
-        sys.path.insert(0, os.path.join(ABS_PATH, '../../../external/mjolnir/'))
+        sys.path.insert(0, os.path.join(ABS_PATH, "../../../external/mjolnir/"))
         mjolnir = self._import_mjolnir()
 
-        assert task_config['task_type'] == 'class',\
-            "Cannot handle task type: {}".format(task_config['task_type'])
-        target_class = task_config['target']
+        assert (
+            task_config["task_type"] == "class"
+        ), "Cannot handle task type: {}".format(task_config["task_type"])
+        target_class = task_config["target"]
         self.gpu_ids = args.gpu_ids
         self.actions = actions
 
@@ -113,9 +119,8 @@ class ThorObjectSearchExternalAgent(ThorAgent):
         if model_name.startswith("MJOLNIR"):
             model_create_fn = mjolnir.model_class(model_name)
             self.player = self.setup_nonadaptivea3c(
-                model_create_fn,
-                load_model_path,
-                args)
+                model_create_fn, load_model_path, args
+            )
 
         glove_file = args.glove_file
         glove = mjolnir.Glove(glove_file)
@@ -140,8 +145,7 @@ class ThorObjectSearchExternalAgent(ThorAgent):
 
         agent_type = "NavigationAgent"
         agent_create_fn = mjolnir.agent_class("NavigationAgent")
-        player = agent_create_fn(model_create_fn,
-                                 args, args.rank, args.gpu_ids[0])
+        player = agent_create_fn(model_create_fn, args, args.rank, args.gpu_ids[0])
         player.sync_with_shared(shared_model)
         player.reset_hidden()
         player.done = False
@@ -171,14 +175,16 @@ class ThorObjectSearchExternalAgent(ThorAgent):
             # https://github.com/allenai/savn/issues/3
             # Note that this feature vector is not used by MJOLNIR_O,
             # which uses object bounding boxes directly instead.
-            state_info.resnet_features =\
-                mjolnir.resnet_input_transform(self._last_observation.img,
-                                               224)
+            state_info.resnet_features = mjolnir.resnet_input_transform(
+                self._last_observation.img, 224
+            )
             action_int, log_prob = self.player.action(
-                model_options, False,
+                model_options,
+                False,
                 state_info=state_info,
                 glove_embedding=self.glove_embedding,
-                just_return_action=True)
+                just_return_action=True,
+            )
             action_name = self.actions[action_int.item()]
             action_params = {}
             if action_name in ALL_MOVES_2D:
