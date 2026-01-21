@@ -23,7 +23,7 @@ setup(
     packages=["cospomdp", "cospomdp_apps"],
     version="0.1",
     description="COS-POMDP",
-    python_requires=">3.10",
+    python_requires=">3.9",
     install_requires=[
         "ai2thor==5.0.0",
         "pomdp-py",
